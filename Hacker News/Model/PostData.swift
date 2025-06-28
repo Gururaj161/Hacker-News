@@ -7,16 +7,23 @@
 
 import Foundation
 
+// Top-level result matching the JSON "hits" array
 struct Result: Decodable {
-    let hits:[Post]
+    let hits: [Post]
 }
 
-struct Post: Decodable,Identifiable {
-    var id: String {
-        return objectID
-    }
-    let objectID:String
-    let points:Int
-    let title:String
-    let url:String
+// Each individual post
+struct Post: Decodable, Identifiable {
+    var id: String { objectID }
+
+    let objectID: String
+    let title: String
+    let url: String?
+    let points: Int?
+    let author: String?
+    let num_comments: Int?
+    let created_at: String?
 }
+
+
+

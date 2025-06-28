@@ -7,30 +7,51 @@
 
 import Foundation
 
-class NetworkManager:ObservableObject {
+class NetworkManager: ObservableObject {
     
-    @Published var posts:[Post] = []
+    @Published var posts: [Post] = []
     
-    func fetchData(){
+    func fetchData() {
+        guard let url = URL(string: "https://hn.algolia.com/api/v1/search?tags=front_page") else {
+            print("❌ Invalid URL")
+            return
+        }
         
-        if let url = URL(string: "https://hn.algolia.com/api/v1/search?tags=front_page") {
-            let session = URLSession(configuration: .default)
-            let task = session.dataTask(with: url) { (data, response, error) in
-                if error == nil {
-                    let decoder = JSONDecoder()
-                    do {
-                        let responseModel = try decoder.decode(Result.self, from: data!)
-                        DispatchQueue.main.async {
-                            self.posts = responseModel.hits
-                        }
-                    } catch {
-                        print("Error parsing: \(error)")
-                    }
-                    
+        let task = URLSession.shared.dataTask(with: url) { data, response, error in
+            if let error = error {
+                print("❌ Network error: \(error.localizedDescription)")
+                return
+            }
+
+            // Check response status code
+            if let httpResponse = response as? HTTPURLResponse {
+                print("🔁 Status Code: \(httpResponse.statusCode)")
+                if httpResponse.statusCode != 200 {
+                    print("❌ Unexpected response code: \(httpResponse.statusCode)")
+                    return
                 }
             }
-            task.resume()
-            
+
+            guard let data = data else {
+                print("❌ No data received")
+                return
+            }
+
+            let decoder = JSONDecoder()
+            do {
+                let responseModel = try decoder.decode(Result.self, from: data)
+                DispatchQueue.main.async {
+                    self.posts = responseModel.hits
+                }
+            } catch {
+                print("❌ JSON decoding error: \(error.localizedDescription)")
+                if let rawJSON = String(data: data, encoding: .utf8) {
+                    print("🔍 Raw JSON received:\n\(rawJSON)")
+                }
+            }
         }
+
+        
+        task.resume()
     }
 }
